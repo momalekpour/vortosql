@@ -1,0 +1,14 @@
+[project]
+name = "nl2sql-data-agent"
+version = "0.1.0"
+description = "NL2SQL Data Agent"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "black>=26.3.1",
+    "pre-commit>=4.5.1",
+    "ruff>=0.15.11",
+]
