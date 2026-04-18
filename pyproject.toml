@@ -5,6 +5,7 @@ description = "NL2SQL Data Agent"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "duckdb>=1.5.2",
     "loguru>=0.7.3",
 ]
 
