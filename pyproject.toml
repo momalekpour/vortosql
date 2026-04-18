@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "NL2SQL Data Agent"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "loguru>=0.7.3",
+]
 
 [dependency-groups]
 dev = [
