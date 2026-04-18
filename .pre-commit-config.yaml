@@ -1,0 +1,17 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
+    hooks:
+      - id: ruff
+        types_or: [python, pyi]
+        args: [--fix]
+        exclude: '__init__.py$|.*\.ipynb$'
+
+  - repo: https://github.com/psf/black
+    rev: 26.3.1
+    hooks:
+      - id: black
+        types_or: [python, pyi]
+        language_version: python3.14
+        args: ['--quiet']
+        exclude: '__init__.py$|.*\.ipynb$' 
