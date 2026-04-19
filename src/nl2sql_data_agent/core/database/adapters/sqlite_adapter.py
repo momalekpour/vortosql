@@ -30,7 +30,12 @@ class SQLiteAdapter(BaseAdapter):
     def run_query(
         self, query: str, return_cursor: bool = False
     ) -> tuple[list[str], list[Any]] | sqlite3.Cursor:
-        """Execute a query. If return_cursor is True, return the cursor; else return (column_names, rows)"""
+        """
+        Execute a query.
+
+        If return_cursor is True, return the cursor; otherwise return
+        (column_names, rows).
+        """
         try:
             cursor = self.connection.cursor()
             cursor.execute(query)
@@ -48,7 +53,7 @@ class SQLiteAdapter(BaseAdapter):
                 "QUERY_EXECUTION_FAILED",
                 {"query": " ".join(query.split()), "error": str(e)},
             )
-            return e
+            raise
 
     def close_connection(self) -> None:
         """Close the SQLite connection."""
