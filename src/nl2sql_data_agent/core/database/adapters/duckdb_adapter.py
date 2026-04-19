@@ -1,4 +1,5 @@
 import duckdb
+from typing import Any
 
 from nl2sql_data_agent.core.database.adapters.base_adapter import BaseAdapter
 from nl2sql_data_agent.core.logger import Logger
@@ -7,7 +8,7 @@ logger = Logger(__name__)
 
 
 class DuckDBAdapter(BaseAdapter):
-    def __init__(self, connection_params: dict):
+    def __init__(self, connection_params: dict[str, Any]):
         """
         connection_params might look like:
         {
@@ -17,7 +18,7 @@ class DuckDBAdapter(BaseAdapter):
         self.connection = None
         self.db_path = connection_params.get("db_path")
 
-    def connect(self):
+    def connect(self) -> None:
         """Connect to DuckDB using the file path."""
         try:
             self.connection = duckdb.connect(self.db_path)
@@ -26,7 +27,9 @@ class DuckDBAdapter(BaseAdapter):
             logger.log("error", "CONNECTION_FAILED", {"error": str(e)})
             raise e
 
-    def run_query(self, query, return_cursor=False):
+    def run_query(
+        self, query: str, return_cursor: bool = False
+    ) -> tuple[list[str], list[Any]] | duckdb.DuckDBPyConnection:
         """Execute a query. If return_cursor is True, return the cursor; else return the fetched results."""
         try:
             cursor = self.connection.cursor()
@@ -47,7 +50,7 @@ class DuckDBAdapter(BaseAdapter):
             )
             raise e
 
-    def close_connection(self):
+    def close_connection(self) -> None:
         """Close the DuckDB connection."""
         if self.connection:
             self.connection.close()

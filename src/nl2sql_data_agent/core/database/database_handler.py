@@ -1,4 +1,5 @@
 import enum
+from typing import Any
 
 from nl2sql_data_agent.core.database.adapters import SQLiteAdapter, DuckDBAdapter
 from nl2sql_data_agent.core.logger import Logger
@@ -18,7 +19,7 @@ ADAPTERS = {
 
 
 class DatabaseHandler:
-    def __init__(self, dbms: DBMS, connection_params: dict):
+    def __init__(self, dbms: DBMS, connection_params: dict[str, Any]):
         """
         Args:
             dbms (DBMS): A DBMS enum member.
@@ -37,7 +38,7 @@ class DatabaseHandler:
         self.adapter = self.adapter_class(connection_params)
         self.connect_to_database()
 
-    def connect_to_database(self):
+    def connect_to_database(self) -> None:
         """Establish the connection using the selected adapter."""
         try:
             self.adapter.connect()
@@ -49,7 +50,7 @@ class DatabaseHandler:
             )
             raise e
 
-    def is_connection_alive(self):
+    def is_connection_alive(self) -> bool:
         """
         Checks if the database connection is alive.
         """
@@ -62,11 +63,13 @@ class DatabaseHandler:
             logger.log("error", "CONNECTION_CHECK_FAILED", {"error": str(e)})
             return False
 
-    def run_query(self, query, return_cursor=False):
+    def run_query(
+        self, query: str, return_cursor: bool = False
+    ) -> tuple[list[str], list[Any]] | Any:
         """Run a query through the selected adapter."""
         return self.adapter.run_query(query, return_cursor)
 
-    def close_connection(self):
+    def close_connection(self) -> None:
         """Close the connection."""
         if self.adapter:
             self.adapter.close_connection()

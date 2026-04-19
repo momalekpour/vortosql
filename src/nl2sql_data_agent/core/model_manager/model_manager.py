@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import enum
-from typing import Union
 
 from nl2sql_data_agent.core.logger import Logger
 from nl2sql_data_agent.core.model_manager.anthropic_model import (
     AnthropicModel,
     AnthropicChatCompletion,
+)
+from nl2sql_data_agent.core.model_manager.huggingface_model import (
+    HuggingFaceModel,
+    HuggingFaceChatCompletion,
+    HuggingFaceEmbeddings,
 )
 from nl2sql_data_agent.core.model_manager.ollama_model import (
     OllamaModel,
@@ -15,11 +21,6 @@ from nl2sql_data_agent.core.model_manager.openai_model import (
     OpenAIModel,
     OpenAIChatCompletion,
     OpenAIEmbeddings,
-)
-from nl2sql_data_agent.core.model_manager.huggingface_model import (
-    HuggingFaceModel,
-    HuggingFaceChatCompletion,
-    HuggingFaceEmbeddings,
 )
 
 logger = Logger(__name__)
@@ -43,9 +44,17 @@ class ModelManager:
         cls,
         model_provider: ModelProvider,
         model_type: ModelType,
-        model_name: Union[OpenAIModel, OllamaModel, HuggingFaceModel, AnthropicModel],
+        model_name: OpenAIModel | OllamaModel | HuggingFaceModel | AnthropicModel,
         openai_api_key: str | None = None,
         anthropic_api_key: str | None = None,
+    ) -> (
+        OpenAIChatCompletion
+        | OpenAIEmbeddings
+        | AnthropicChatCompletion
+        | OllamaChatCompletion
+        | OllamaEmbeddings
+        | HuggingFaceChatCompletion
+        | HuggingFaceEmbeddings
     ):
         if model_provider == ModelProvider.OPENAI:
             if model_type == ModelType.COMPLETION:

@@ -1,4 +1,5 @@
 import abc
+from typing import Any
 
 
 class BaseAdapter(abc.ABC):
@@ -8,18 +9,20 @@ class BaseAdapter(abc.ABC):
     """
 
     @abc.abstractmethod
-    def connect(self):
+    def connect(self) -> None:
         """Establish the database connection."""
         pass
 
     @abc.abstractmethod
-    def run_query(self, query, return_cursor=False):
+    def run_query(
+        self, query: str, return_cursor: bool = False
+    ) -> tuple[list[str], list[Any]] | Any:
         """
         Execute a query and optionally return a cursor or the raw results.
         """
         pass
 
     @abc.abstractmethod
-    def close_connection(self):
+    def close_connection(self) -> None:
         """Close the database connection."""
         pass

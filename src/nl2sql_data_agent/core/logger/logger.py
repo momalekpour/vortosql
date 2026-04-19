@@ -8,7 +8,7 @@ class Logger:
     _configured = False
     _config_lock = Lock()
 
-    def __init__(self, name=__name__, level="DEBUG"):
+    def __init__(self, name: str = __name__, level: str = "DEBUG") -> None:
         with Logger._config_lock:
             if not Logger._configured:
                 logger.remove()
@@ -21,7 +21,7 @@ class Logger:
                 Logger._configured = True
         self.logger = logger.bind(logger_name=name)
 
-    def log(self, level, action, details=None):
+    def log(self, level: str, action: str, details: dict | None = None) -> None:
         message = {"action": action}
         if details is not None:
             if isinstance(details, dict):

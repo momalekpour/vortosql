@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any
 
 import jinja2
 from nl2sql_data_agent.core.logger import Logger
@@ -12,9 +12,9 @@ class PromptRenderer:
             loader=jinja2.FileSystemLoader(searchpath=templates_dir_path),
             undefined=jinja2.StrictUndefined,
         )
-        self.template_cache: Dict[str, jinja2.Template] = {}
+        self.template_cache: dict[str, jinja2.Template] = {}
 
-    def render(self, template_name: str, context: Dict[str, Any]) -> str:
+    def render(self, template_name: str, context: dict[str, Any]) -> str:
         try:
             template = self._load_template(f"{template_name}.jinja")
             return template.render(context)
