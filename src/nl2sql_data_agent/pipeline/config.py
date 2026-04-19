@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from nl2sql_data_agent.core.database.database_handler import DBMS
-from nl2sql_data_agent.core.model_manager import ModelProvider, OllamaModel, OpenAIModel
 from pydantic import BaseModel, confloat, model_validator
 
+from nl2sql_data_agent.core.database.database_handler import DBMS
+from nl2sql_data_agent.core.model_manager import ModelProvider, OllamaModel, OpenAIModel
 from nl2sql_data_agent.pipeline.example_selector import ExampleSelectionTechnique
 from nl2sql_data_agent.pipeline.schema_linker import SchemaLinkingTechnique
 from nl2sql_data_agent.pipeline.sql_corrector import SQLCorrectionPromptTemplate
@@ -27,7 +27,8 @@ class SchemaLinkerConfig(BaseModel):
         if self.technique in (SchemaLinkingTechnique.TCSL, SchemaLinkingTechnique.SCSL):
             if not self.model_provider or not self.model_name:
                 raise ValueError(
-                    "model_provider and model_name are required for TCSL/SCSL techniques"
+                    "model_provider and model_name are required for TCSL/SCSL"
+                    " techniques"
                 )
         return self
 
@@ -44,7 +45,8 @@ class ExampleSelectorConfig(BaseModel):
         if self.technique == ExampleSelectionTechnique.QUESTION_SIMILARITY:
             if not self.embedding_model_provider or not self.embedding_model_name:
                 raise ValueError(
-                    "embedding_model_provider and embedding_model_name are required for QUESTION_SIMILARITY technique"
+                    "embedding_model_provider and embedding_model_name are required"
+                    " for QUESTION_SIMILARITY technique"
                 )
         return self
 
@@ -72,6 +74,12 @@ class SQLExecutorConfig(BaseModel):
     dbms: DBMS
 
 
+class AnswerGeneratorConfig(BaseModel):
+    chat_completion_model_provider: ModelProvider
+    chat_completion_model_name: OllamaModel | OpenAIModel
+    temperature: confloat(ge=0, le=2)
+
+
 class NL2SQLPipelineConfig(BaseModel):
     intent_guardrail: IntentGuardrailConfig
     schema_linker: SchemaLinkerConfig
@@ -79,3 +87,4 @@ class NL2SQLPipelineConfig(BaseModel):
     sql_generator: SQLGeneratorConfig
     sql_corrector: SQLCorrectorConfig
     sql_executor: SQLExecutorConfig
+    answer_generator: AnswerGeneratorConfig

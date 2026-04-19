@@ -1,39 +1,45 @@
 # NL2SQL pipeline configuration
 nl2sql_pipeline:
   intent_guardrail:
-    chat_completion_model_provider: openai      # LLM provider: "openai", "anthropic", "ollama"
-    chat_completion_model_name: gpt-4o-mini     # Model name for the provider above
+    chat_completion_model_provider: openai      # LLM provider: "openai"
+    chat_completion_model_name: gpt-5.4         # Model name for the provider above: "gpt-54
     temperature: 0                              # 0 = deterministic; range 0–2
 
   schema_linker:
-    db_file_path: data/employees.db            # Path to the SQLite database file
-    technique: full                            # "full" = pass entire schema; "tcsl"/"scsl" = LLM-driven selection
-    model_provider: openai                     # Required only for tcsl/scsl techniques
-    model_name: gpt-4o-mini                    # Required only for tcsl/scsl techniques
+    db_file_path: data/employees.db             # Path to the SQLite database file
+    technique: full                             # "full" = pass entire schema; "tcsl"/"scsl" = LLM-driven selection
+    model_provider: openai                      # Required only for tcsl/scsl techniques
+    model_name: gpt-5.4-mini                    # Required only for tcsl/scsl techniques (mini to reduce cost)
+    temperature: 0                              # 0 = deterministic
 
   example_selector:
-    technique: question_similarity             # "random" = random sample; "question_similarity" = embedding-based
-    number_of_examples: 3                      # Number of few-shot examples to retrieve
-    embedding_model_provider: openai           # Required for question_similarity technique
+    technique: question_similarity              # "random" = random sample; "question_similarity" = embedding-based
+    number_of_examples: 3                       # Number of few-shot examples to retrieve
+    embedding_model_provider: openai            # Required for question_similarity technique
     embedding_model_name: text-embedding-3-small  # Embedding model to use
-    random_seed: null                          # Integer for reproducibility, or null
+    random_seed: null                           # Integer for reproducibility, or null
 
   sql_generator:
-    prompt_template: zero_shot                 # "zero_shot" = no examples; "few_shot" = use example_selector output
-    chat_completion_model_provider: openai     # LLM provider
-    chat_completion_model_name: gpt-4o-mini    # Model name
-    temperature: 0                             # 0 = deterministic
-    random_seed: null                          # Integer for reproducibility, or null
+    prompt_template: zero_shot                  # "zero_shot" = no examples; "few_shot" = use example_selector output
+    chat_completion_model_provider: openai      # LLM provider
+    chat_completion_model_name: gpt-5.4         # Model name
+    temperature: 0                              # 0 = deterministic
+    random_seed: null                           # Integer for reproducibility, or null
 
   sql_corrector:
     max_correction_attempts: 2                 # Number of retry attempts; 0 = disabled
     prompt_template: syntax_correction         # Correction prompt style; currently only "syntax_correction"
     dbms: sqlite                               # Target DBMS for SQL dialect: "sqlite" or "duckdb"
     chat_completion_model_provider: openai     # LLM provider
-    chat_completion_model_name: gpt-4o-mini    # Model name
+    chat_completion_model_name: gpt-5.4        # Model name
     temperature: 0                             # 0 = deterministic
     random_seed: null                          # Integer for reproducibility, or null
 
   sql_executor:
     db_file_path: data/employees.db            # Path to the SQLite database file
     dbms: sqlite                               # Target DBMS: "sqlite" or "duckdb"
+
+  answer_generator:
+    chat_completion_model_provider: openai      # LLM provider
+    chat_completion_model_name: gpt-5.4-mini    # Model name (mini is sufficient for summarization)
+    temperature: 0                              # 0 = deterministic

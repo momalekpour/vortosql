@@ -5,6 +5,7 @@ from typing import Any
 import yaml
 
 from nl2sql_data_agent.core.logger import Logger
+from nl2sql_data_agent.pipeline.answer_generator import AnswerGenerator
 from nl2sql_data_agent.pipeline.config import NL2SQLPipelineConfig
 from nl2sql_data_agent.pipeline.example_selector import ExampleSelector
 from nl2sql_data_agent.pipeline.intent_guardrail import IntentGuardrail
@@ -13,8 +14,8 @@ from nl2sql_data_agent.pipeline.schema_linker import SchemaLinker
 from nl2sql_data_agent.pipeline.sql_corrector import SQLCorrector
 from nl2sql_data_agent.pipeline.sql_executor import SQLExecutor
 from nl2sql_data_agent.pipeline.sql_generator import (
-    SQLGenerator,
     SQLGenerationPromptTemplate,
+    SQLGenerator,
 )
 
 logger = Logger(__name__)
@@ -42,19 +43,22 @@ class NL2SQLPipeline:
         if config.sql_corrector.max_correction_attempts > 0:
             operators.append(SQLCorrector(config=config.sql_corrector.model_dump()))
         operators.append(SQLExecutor(config=config.sql_executor.model_dump()))
+        operators.append(AnswerGenerator(config=config.answer_generator.model_dump()))
 
         return operators
 
     def execute(
         self,
         user_question: str,
-        accessible_schema: dict[str, list[str]] | None = None,
+        schema_guardrails: dict[str, list[str]] | None = None,
         row_guardrails: dict[str, dict[str, Any]] | None = None,
+        fk_guardrails: dict[str, dict[str, str]] | None = None,
     ) -> dict[str, Any]:
         context = {
             "user_question": user_question,
-            "accessible_schema": accessible_schema,
+            "schema_guardrails": schema_guardrails,
             "row_guardrails": row_guardrails,
+            "fk_guardrails": fk_guardrails,
         }
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         start_time = time.time()
@@ -77,7 +81,7 @@ if __name__ == "__main__":
 
     result = pipeline.execute(
         user_question="What is the name of the employee with the highest salary?",
-        accessible_schema={"Employee": ["*"]},
+        schema_guardrails={"Employee": ["*"]},
         row_guardrails={"Employee": {"Department": "Engineering"}},
     )
 
