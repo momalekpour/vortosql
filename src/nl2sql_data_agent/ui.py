@@ -68,7 +68,8 @@ def get_app(department: str) -> "NL2SQLApp":
 if "started" not in st.session_state:
     st.markdown(
         """
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;
+    <div style="display:flex; flex-direction:column; align-items:center;
+                justify-content:center;
                 min-height:70vh; text-align:center;">
         <div style="font-size:0.85rem; font-weight:600; letter-spacing:0.15em;
                     text-transform:uppercase; color:#888; margin-bottom:1rem;">
@@ -98,7 +99,8 @@ if "started" not in st.session_state:
 with st.sidebar:
     st.markdown("**NL2SQL Data Agent**")
     st.markdown(
-        "<hr style='margin:0.4rem 0 0.8rem 0; border:none; border-top:1px solid #eee;'>",
+        "<hr style='margin:0.4rem 0 0.8rem 0; border:none;"
+        " border-top:1px solid #eee;'>",
         unsafe_allow_html=True,
     )
     selected = st.radio(
@@ -137,14 +139,19 @@ for entry in st.session_state.get("history", []):
         elif entry["row_count"] == 0:
             st.info("No results found.")
             st.markdown(
-                f"<div class='sql-meta'>{entry['sql']} &nbsp;·&nbsp; {entry['latency']:.2f}s</div>",
+                f"<div class='sql-meta'>{entry['sql']}"
+                f" &nbsp;·&nbsp; {entry['latency']:.2f}s</div>",
                 unsafe_allow_html=True,
             )
         else:
+            if entry.get("answer"):
+                st.markdown(entry["answer"])
             df = pd.DataFrame(entry["rows"], columns=entry["columns"])
             st.dataframe(df, use_container_width=True, hide_index=True)
             st.markdown(
-                f"<div class='sql-meta'>{entry['sql']} &nbsp;·&nbsp; {entry['row_count']} row(s) &nbsp;·&nbsp; {entry['latency']:.2f}s</div>",
+                f"<div class='sql-meta'>{entry['sql']}"
+                f" &nbsp;·&nbsp; {entry['row_count']} row(s)"
+                f" &nbsp;·&nbsp; {entry['latency']:.2f}s</div>",
                 unsafe_allow_html=True,
             )
 
@@ -166,6 +173,7 @@ if question:
             "row_count": result.get("sql_executor_row_count", 0),
             "latency": result.get("pipeline_latency", 0),
             "error": result.get("sql_executor_error"),
+            "answer": result.get("answer_generator_answer", ""),
         }
     )
     st.rerun()

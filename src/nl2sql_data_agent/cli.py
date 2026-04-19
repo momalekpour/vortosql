@@ -2,6 +2,8 @@ from typing import Any
 
 from nl2sql_data_agent.app import DEPARTMENTS, NL2SQLApp
 
+DIVIDER = "─" * 60
+
 
 def _format_table(columns: list[str], rows: list[list[Any]]) -> str:
     if not rows:
@@ -38,20 +40,21 @@ def _pick_department() -> str | None:
 
 
 def main() -> None:
-    print("=" * 60)
-    print("  NL2SQL Data Agent")
-    print("=" * 60)
+    print(f"\n{'NL2SQL Data Agent':^60}")
+    print(DIVIDER)
 
     department = _pick_department()
     app = NL2SQLApp(department=department)
 
-    print(f"\n[INFO] Department: {app.department}")
-    print("       All queries are restricted to this department.")
-    print('\nType your question. Enter "exit" or "quit" to stop.\n')
+    print(f"\n  Department : {app.department}")
+    print(f"  Scope      : queries restricted to {app.department} only")
+    print(f"\n{DIVIDER}")
+    print('  Ask a question or type "exit" to quit.')
+    print(DIVIDER)
 
     while True:
         try:
-            question = input("Question: ").strip()
+            question = input("\n> ").strip()
         except EOFError, KeyboardInterrupt:
             print("\nGoodbye!")
             break
@@ -59,19 +62,21 @@ def main() -> None:
         if not question:
             continue
         if question.lower() in ("exit", "quit"):
-            print("Goodbye!")
+            print("\nGoodbye!")
             break
 
         result = app.ask(question)
 
         early_stop = result.get("pipeline_early_stop")
         if early_stop:
-            print(f"\n{early_stop}\n")
+            print(f"\n  ! {early_stop}")
+            print(f"\n{DIVIDER}")
             continue
 
         error = result.get("sql_executor_error")
         if error:
-            print(f"\n[ERROR] {error}\n")
+            print(f"\n  ! Error: {error}")
+            print(f"\n{DIVIDER}")
             continue
 
         sql = result.get("sql_executor_sql_query", "")
@@ -80,12 +85,17 @@ def main() -> None:
         row_count = result.get("sql_executor_row_count", 0)
         latency = result.get("pipeline_latency", 0)
 
-        print(f"\nSQL: {sql}\n")
+        answer = result.get("answer_generator_answer")
+        if answer:
+            print(f"\n  {answer}")
+
+        print(f"\n  SQL  : {sql}\n")
         if row_count == 0:
             print("  No results found.")
         else:
             print(_format_table(columns, rows))
-            print(f"  {row_count} row(s)  [{latency:.2f}s]\n")
+            print(f"\n  {row_count} row(s)  ·  {latency:.2f}s")
+        print(f"\n{DIVIDER}")
 
 
 if __name__ == "__main__":
