@@ -30,6 +30,8 @@ bash scripts/run_cli.sh
 
 ## Architecture
 
+### Pipeline Overview
+
 See [`docs/architecture.md`](docs/architecture.md) for full details. The application is built around a **composable operator pipeline** configured via `config.yaml` — each operator's model provider, technique, and behaviour is plug-and-play; the default setup is ready to run as-is. Each operator implements an `execute(context)` method that reads from and writes to a shared context dictionary. The pipeline runs the following operators in order:
 
 1. **IntentGuardrail** - LLM-based scope classifier; rejects out-of-scope questions via early-stop
@@ -40,7 +42,7 @@ See [`docs/architecture.md`](docs/architecture.md) for full details. The applica
 6. **SQLExecutor** - Executes the final SQL; enforces department guardrails via AST-level injection
 7. **AnswerGenerator** - LLM summarises the query results into a natural language answer
 
-### Guardrails System (5 Layers)
+### Guardrails System
 
 Department is locked at session start and enforced across five independent layers:
 
