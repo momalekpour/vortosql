@@ -208,3 +208,6 @@ __marimo__/
 
 # data directory
 /data/cache/
+
+# Claude Code
+CLAUDE.md
