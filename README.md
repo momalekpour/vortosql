@@ -55,8 +55,3 @@ Department is locked at session start and enforced across five independent layer
 ### Session Logs
 
 Each pipeline run dumps its full config and context to `logs/<timestamp>.json` for traceability.
-
-## AI Tools Used
-
-- **GitHub Copilot:** Used for inline code suggestions and autocompletion in PyCharm IDE
-- **Claude Code:** Assisted with brainstorming, part of development, and documentation
