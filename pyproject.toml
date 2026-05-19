@@ -31,6 +31,8 @@ dev = [
     "black>=26.3.1",
     "pre-commit>=4.5.1",
     "ruff>=0.15.11",
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
 ]
 
 [project.scripts]
@@ -62,3 +64,39 @@ select = ["E", "F", "I"]
 line-length = 88
 target-version = ["py314"]
 exclude = '(__init__\.py|.*\.ipynb)'
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--import-mode=importlib",
+    "--cov=vortosql.core.database",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:duckdb.*",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/vortosql/core/database"]
+omit = ["*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+precision = 1
+exclude_also = [
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "\\.\\.\\.",
+]
+fail_under = 85
