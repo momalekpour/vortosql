@@ -210,7 +210,7 @@ __marimo__/
 /data/cache/
 
 # Claude Code
-CLAUDE.md
+#CLAUDE.md
 
 # Session logs
 /logs/

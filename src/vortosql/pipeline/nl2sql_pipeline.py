@@ -33,7 +33,11 @@ class NL2SQLPipeline:
         operators = list()
 
         operators.append(IntentGuardrail(config=config.intent_guardrail.model_dump()))
-        operators.append(SchemaLinker(config=config.schema_linker.model_dump()))
+
+        schema_linker_config = config.schema_linker.model_dump()
+        schema_linker_config["db_file_path"] = config.db_file_path
+        operators.append(SchemaLinker(config=schema_linker_config))
+
         if (
             config.sql_generator.prompt_template
             != SQLGenerationPromptTemplate.ZERO_SHOT
@@ -44,24 +48,17 @@ class NL2SQLPipeline:
         operators.append(SQLGenerator(config=config.sql_generator.model_dump()))
         if config.sql_corrector.max_correction_attempts > 0:
             operators.append(SQLCorrector(config=config.sql_corrector.model_dump()))
-        operators.append(SQLExecutor(config=config.sql_executor.model_dump()))
+
+        sql_executor_config = config.sql_executor.model_dump()
+        sql_executor_config["db_file_path"] = config.db_file_path
+        operators.append(SQLExecutor(config=sql_executor_config))
+
         operators.append(AnswerGenerator(config=config.answer_generator.model_dump()))
 
         return operators
 
-    def execute(
-        self,
-        user_question: str,
-        schema_guardrails: dict[str, list[str]] | None = None,
-        row_guardrails: dict[str, dict[str, Any]] | None = None,
-        fk_guardrails: dict[str, dict[str, str]] | None = None,
-    ) -> dict[str, Any]:
-        context = {
-            "user_question": user_question,
-            "schema_guardrails": schema_guardrails,
-            "row_guardrails": row_guardrails,
-            "fk_guardrails": fk_guardrails,
-        }
+    def execute(self, user_question: str) -> dict[str, Any]:
+        context = {"user_question": user_question}
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         start_time = time.time()
         for operator in self.operators:
@@ -98,8 +95,6 @@ if __name__ == "__main__":
 
     result = pipeline.execute(
         user_question="What is the name of the employee with the highest salary?",
-        schema_guardrails={"Employee": ["*"]},
-        row_guardrails={"Employee": {"Department": "Engineering"}},
     )
 
     print(f"Generated SQL : {result.get('sql_generator_sql_query')}")

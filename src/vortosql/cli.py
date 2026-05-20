@@ -1,6 +1,6 @@
 from typing import Any
 
-from vortosql.app import DEPARTMENTS, NL2SQLApp
+from vortosql.app import NL2SQLApp
 
 DIVIDER = "─" * 60
 
@@ -23,33 +23,13 @@ def _format_table(columns: list[str], rows: list[list[Any]]) -> str:
     return f"{sep}\n{header}\n{sep}\n{body}\n{sep}"
 
 
-def _pick_department() -> str | None:
-    options = DEPARTMENTS + ["Random"]
-    print("\nSelect a department:")
-    for i, d in enumerate(options, 1):
-        print(f"  [{i}] {d}")
-    while True:
-        try:
-            choice = input("\nChoice (1-4): ").strip()
-        except EOFError, KeyboardInterrupt:
-            return None
-        if choice.isdigit() and 1 <= int(choice) <= len(options):
-            selected = options[int(choice) - 1]
-            return None if selected == "Random" else selected
-        print("  Invalid choice, try again.")
-
-
 def main() -> None:
     print(f"\n{'NL2SQL Data Agent':^60}")
     print(DIVIDER)
 
-    department = _pick_department()
-    app = NL2SQLApp(department=department)
+    app = NL2SQLApp()
 
-    print(f"\n  Department : {app.department}")
-    print(f"  Scope      : queries restricted to {app.department} only")
-    print(f"\n{DIVIDER}")
-    print('  Ask a question or type "exit" to quit.')
+    print('\n  Ask a question or type "exit" to quit.')
     print(DIVIDER)
 
     while True:

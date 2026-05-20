@@ -11,13 +11,14 @@ from vortosql.pipeline.sql_generator import SQLGenerationPromptTemplate
 
 
 class IntentGuardrailConfig(BaseModel):
+    scope: str | None = None
     chat_completion_model_provider: ModelProvider
     chat_completion_model_name: OllamaModel | OpenAIModel
     temperature: confloat(ge=0, le=2)
 
 
 class SchemaLinkerConfig(BaseModel):
-    db_file_path: str
+    schema_guardrails: dict[str, list[str]] | None = None
     technique: SchemaLinkingTechnique
     model_provider: ModelProvider | None = None
     model_name: OllamaModel | OpenAIModel | None = None
@@ -70,7 +71,6 @@ class SQLCorrectorConfig(BaseModel):
 
 
 class SQLExecutorConfig(BaseModel):
-    db_file_path: str
     dbms: DBMS
 
 
@@ -81,6 +81,7 @@ class AnswerGeneratorConfig(BaseModel):
 
 
 class NL2SQLPipelineConfig(BaseModel):
+    db_file_path: str
     intent_guardrail: IntentGuardrailConfig
     schema_linker: SchemaLinkerConfig
     example_selector: ExampleSelectorConfig

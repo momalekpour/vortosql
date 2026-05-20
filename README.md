@@ -34,23 +34,20 @@ bash scripts/run_cli.sh
 
 See [`docs/architecture.md`](docs/architecture.md) for full details. The application is built around a **composable operator pipeline** configured via `config.yaml` — each operator's model provider, technique, and behaviour is plug-and-play; the default setup is ready to run as-is. Each operator implements an `execute(context)` method that reads from and writes to a shared context dictionary. The pipeline runs the following operators in order:
 
-1. **IntentGuardrail** - LLM-based scope classifier; rejects out-of-scope questions via early-stop
+1. **IntentGuardrail** - Optional LLM-based scope classifier; rejects out-of-scope questions via early-stop. Skipped when no scope is configured.
 2. **SchemaLinker** - Resolves which tables/columns are relevant to the question
 3. **ExampleSelector** - Retrieves similar few-shot examples (skipped in zero-shot mode)
 4. **SQLGenerator** - LLM generates a SQL query from the question, schema, and examples
 5. **SQLCorrector** - Validates and auto-corrects SQL errors via retry loop
-6. **SQLExecutor** - Executes the final SQL; enforces department guardrails via AST-level injection
+6. **SQLExecutor** - Executes the final SQL against the database
 7. **AnswerGenerator** - LLM summarises the query results into a natural language answer
 
-### Guardrails System
+### Guardrails
 
-Department is locked at session start and enforced across five independent layers:
+Two opt-in defences, both controlled by `config.yaml` (or by overrides passed to `NL2SQLApp`):
 
-- **Layer 0 — Intent gate** (IntentGuardrail, soft): LLM checks if the question is in-domain; triggers early-stop if not.
-- **Layer 1 — Schema restriction** (SchemaLinker, hard): `schema_guardrails` hides tables/columns from the LLM entirely.
-- **Layer 2 — Prompt constraint** (SQLGenerator, soft): `row_guardrails` are rendered as mandatory filter instructions in the prompt.
-- **Layer 3a — Direct AST injection** (SQLExecutor, hard): sqlglot injects a missing `WHERE` on guardrailed columns (e.g., `Employee.Department = 'Engineering'`).
-- **Layer 3b — FK-aware AST injection** (SQLExecutor, hard): sqlglot injects a subquery filter for child tables queried without a JOIN (e.g., `Certification.EmployeeId IN (SELECT ...)`).
+- **Layer 0 — Intent gate** (IntentGuardrail, soft): when `scope` is set, the LLM checks whether the question fits the described scope and triggers an early-stop if not. `scope: null` disables the operator entirely.
+- **Layer 1 — Schema restriction** (SchemaLinker, hard): when `schema_guardrails` is set, only allowlisted tables/columns are exposed to the LLM. `schema_guardrails: null` exposes the full schema.
 
 ### Session Logs
 

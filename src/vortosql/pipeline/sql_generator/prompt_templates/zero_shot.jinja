@@ -5,15 +5,6 @@ Your task is to read the database schema, understand the user question, and crea
 ### Database Schema ###
 {{ schema_linker_db_schema }}
 
-{% if row_guardrails %}
-### Mandatory Constraints ###
-Your SQL MUST enforce the following filters — do not omit them under any circumstances:
-{% for table, filters in row_guardrails.items() %}{% for col, val in filters.items() %}- {{ table }}.{{ col }} = '{{ val }}'
-{% endfor %}{% endfor %}
-{% if fk_guardrails %}- When querying the following tables without joining their parent table, you MUST add a subquery filter:
-{% for child_table, fk in fk_guardrails.items() %}{%- set parent = fk.ref_table %}{%- set parent_filters = row_guardrails.get(parent, {}) %}{%- if parent_filters %}  - {{ child_table }}: WHERE {{ fk.fk_column }} IN (SELECT {{ fk.ref_column }} FROM {{ parent }} WHERE {% for col, val in parent_filters.items() %}{{ parent }}.{{ col }} = '{{ val }}'{% if not loop.last %} AND {% endif %}{% endfor %})
-{% endif %}{% endfor %}{% endif %}
-{% endif %}
 ### Instructions ###
 1. For highest/lowest queries, prefer ORDER BY + LIMIT 1 over MAX/MIN in subqueries.
 2. Only include columns in SELECT that the question asks for. Do not add extra columns.

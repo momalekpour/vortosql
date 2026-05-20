@@ -23,10 +23,18 @@ class IntentGuardrail(Operator):
         )
 
     def execute(self, context: dict[str, Any]) -> None:
+        scope = self.config.get("scope")
+        if not scope:
+            context["intent_guardrail_is_in_scope"] = True
+            context["intent_guardrail_reason"] = "no scope configured"
+            logger.log("info", "INTENT_GUARDRAIL_SKIPPED", {"reason": "no scope"})
+            return
+
         user_question = context.get("user_question", "")
         try:
             prompt = self._prompt_renderer.render(
-                "intent_check", {"user_question": user_question}
+                "intent_check",
+                {"user_question": user_question, "scope": scope},
             )
             messages = compose_chat_messages(user_messages=[prompt])
             response = self._llm.get_chat_completion(
@@ -56,10 +64,9 @@ class IntentGuardrail(Operator):
 
         if not is_in_scope:
             message = (
-                "I can only answer questions about employee"
-                " details, certifications, and benefits. "
-                "Your question appears to be out of scope:"
-                f" {reason}"
+                f"Your question is out of scope: {reason}"
+                if reason
+                else ("Your question is out of scope.")
             )
             context["pipeline_early_stop"] = message
             logger.log(

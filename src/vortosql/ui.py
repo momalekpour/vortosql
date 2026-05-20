@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-from vortosql.app import DEPARTMENTS, NL2SQLApp
+from vortosql.app import NL2SQLApp
 from vortosql.core.logger import Logger
 
 logger = Logger(__name__)
@@ -21,16 +21,6 @@ st.markdown(
         font-weight: 700;
         color: #0f0f0f;
         letter-spacing: -0.01em;
-    }
-    .dept-badge {
-        display: inline-block;
-        background: #f0f2f6;
-        border-radius: 20px;
-        padding: 2px 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #555;
-        vertical-align: middle;
     }
 
     /* Empty state */
@@ -60,8 +50,8 @@ st.markdown(
 
 
 @st.cache_resource
-def get_app(department: str) -> "NL2SQLApp":
-    return NL2SQLApp(department=department)
+def get_app() -> "NL2SQLApp":
+    return NL2SQLApp()
 
 
 # ── Hero landing page ─────────────────────────────────────────────────────────
@@ -90,40 +80,19 @@ if "started" not in st.session_state:
     with btn_col:
         if st.button("Get Started →", type="primary", use_container_width=True):
             st.session_state["started"] = True
-            st.session_state["department"] = DEPARTMENTS[0]
             st.session_state["history"] = []
             st.rerun()
     st.stop()
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("**NL2SQL Data Agent**")
-    st.markdown(
-        "<hr style='margin:0.4rem 0 0.8rem 0; border:none;"
-        " border-top:1px solid #eee;'>",
-        unsafe_allow_html=True,
-    )
-    selected = st.radio(
-        "Department",
-        options=DEPARTMENTS,
-        index=DEPARTMENTS.index(st.session_state.get("department", DEPARTMENTS[0])),
-    )
-    if selected != st.session_state.get("department"):
-        st.session_state["department"] = selected
-        st.session_state["history"] = []
-        st.rerun()
-
-    st.caption(f"Queries are scoped to **{selected}** employees only.")
-
 # ── Main chat ─────────────────────────────────────────────────────────────────
-app = get_app(st.session_state["department"])
+app = get_app()
 
 
 if not st.session_state.get("history"):
     st.markdown(
         "<div class='empty-state'>"
         "<div class='icon'>💬</div>"
-        "<div>Ask anything about employees, certifications, or benefits.</div>"
+        "<div>Ask anything about your data.</div>"
         "</div>",
         unsafe_allow_html=True,
     )
@@ -155,12 +124,10 @@ for entry in st.session_state.get("history", []):
                 unsafe_allow_html=True,
             )
 
-question = st.chat_input("Ask a question about your team...")
+question = st.chat_input("Ask a question about your data...")
 if question:
     question = str(question)
-    logger.log(
-        "info", "USER_QUESTION", {"question": question, "department": app.department}
-    )
+    logger.log("info", "USER_QUESTION", {"question": question})
     with st.spinner("Thinking..."):
         result = app.ask(question)
     st.session_state["history"].append(
