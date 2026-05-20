@@ -18,6 +18,21 @@ jobs:
       matrix:
         python-version: ["3.14"]
 
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vortosql
+          POSTGRES_USER: vortosql
+          POSTGRES_PASSWORD: vortosql
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -34,6 +49,12 @@ jobs:
         run: uv sync --frozen --group dev
 
       - name: Run tests with coverage
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: vortosql
+          POSTGRES_USER: vortosql
+          POSTGRES_PASSWORD: vortosql
         run: uv run pytest
 
       - name: Upload coverage to Codecov
