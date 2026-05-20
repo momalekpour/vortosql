@@ -17,6 +17,7 @@ dependencies = [
     "ollama>=0.6.1",
     "openai>=2.32.0",
     "pandas>=3.0.2",
+    "psycopg2-binary>=2.9",
     "pydantic>=2.13.2",
     "sqlglot>=30.4.3",
     "streamlit>=1.56.0",

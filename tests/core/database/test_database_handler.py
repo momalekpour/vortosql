@@ -10,14 +10,16 @@ from vortosql.core.database.database_handler import DBMS, DatabaseHandler
 def mock_adapters(monkeypatch):
     sqlite_cls = MagicMock(name="SQLiteAdapterClass")
     duckdb_cls = MagicMock(name="DuckDBAdapterClass")
+    postgres_cls = MagicMock(name="PostgresAdapterClass")
     sqlite_cls.return_value.connect.return_value = None
     duckdb_cls.return_value.connect.return_value = None
+    postgres_cls.return_value.connect.return_value = None
     monkeypatch.setattr(
         dh_module,
         "ADAPTERS",
-        {DBMS.SQLITE: sqlite_cls, DBMS.DUCKDB: duckdb_cls},
+        {DBMS.SQLITE: sqlite_cls, DBMS.DUCKDB: duckdb_cls, DBMS.POSTGRES: postgres_cls},
     )
-    return {"sqlite": sqlite_cls, "duckdb": duckdb_cls}
+    return {"sqlite": sqlite_cls, "duckdb": duckdb_cls, "postgres": postgres_cls}
 
 
 def test_handler_dispatches_to_sqlite_adapter(mock_adapters):
@@ -84,3 +86,17 @@ def test_handler_is_connection_alive_false_when_query_raises(mock_adapters):
     mock_adapters["sqlite"].return_value.run_query.side_effect = RuntimeError("dead")
     handler = DatabaseHandler(DBMS.SQLITE, {"db_path": ":memory:"})
     assert handler.is_connection_alive() is False
+
+
+def test_handler_dispatches_to_postgres_adapter(mock_adapters):
+    params = {
+        "host": "localhost",
+        "port": 5432,
+        "dbname": "vortosql",
+        "user": "u",
+        "password": "p",
+    }
+    DatabaseHandler(DBMS.POSTGRES, params)
+    mock_adapters["postgres"].assert_called_once_with(params)
+    mock_adapters["sqlite"].assert_not_called()
+    mock_adapters["duckdb"].assert_not_called()

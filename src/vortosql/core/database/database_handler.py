@@ -1,7 +1,11 @@
 import enum
 from typing import Any
 
-from vortosql.core.database.adapters import DuckDBAdapter, SQLiteAdapter
+from vortosql.core.database.adapters import (
+    DuckDBAdapter,
+    PostgresAdapter,
+    SQLiteAdapter,
+)
 from vortosql.core.logger import Logger
 
 logger = Logger(__name__)
@@ -10,11 +14,13 @@ logger = Logger(__name__)
 class DBMS(enum.Enum):
     SQLITE = "sqlite"
     DUCKDB = "duckdb"
+    POSTGRES = "postgres"
 
 
 ADAPTERS = {
     DBMS.SQLITE: SQLiteAdapter,
     DBMS.DUCKDB: DuckDBAdapter,
+    DBMS.POSTGRES: PostgresAdapter,
 }
 
 
