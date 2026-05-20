@@ -9,6 +9,7 @@
 - [Guardrails](#guardrails)
 - [Application Layer](#application-layer)
 - [Core Utilities](#core-utilities)
+- [Docker](#docker)
 - [Configuration Reference](#configuration-reference)
 
 ---
@@ -34,7 +35,8 @@ src/vortosql/
 │   │   └── adapters/
 │   │       ├── base_adapter.py     # ABC: connect(), run_query(), close_connection()
 │   │       ├── sqlite_adapter.py
-│   │       └── duckdb_adapter.py
+│   │       ├── duckdb_adapter.py
+│   │       └── postgres_adapter.py
 │   ├── logger/                     # Structured JSON logger (loguru)
 │   │   └── logger.py               # Logger(name).log(level, event, payload)
 │   ├── model_manager/              # LLM provider abstraction
@@ -60,6 +62,9 @@ src/vortosql/
     └── answer_generator/           # Step 7: LLM summarises results into natural language
 
 config.yaml                         # Runtime configuration for all operators
+Dockerfile                          # Single-stage image (uv + Python 3.14); defaults to Streamlit UI
+docker-compose.yml                  # Services: ui (8501), cli (interactive), postgres (5432)
+.dockerignore                       # Excludes .env, caches, logs from build context
 
 scripts/
 ├── run_ui.sh                       # Sources .env, then launches Streamlit
@@ -363,7 +368,15 @@ Two-phase flow:
 Adapter pattern over SQLite and DuckDB:
 
 ```python
+# SQLite / DuckDB
 db = DatabaseHandler(DBMS.SQLITE, {"db_path": "data/employees.db"})
+
+# PostgreSQL
+db = DatabaseHandler(DBMS.POSTGRES, {
+    "host": "localhost", "port": 5432,
+    "dbname": "vortosql", "user": "vortosql", "password": "vortosql",
+})
+
 columns, rows = db.run_query("SELECT ...")
 db.close_connection()
 ```
@@ -416,6 +429,39 @@ Every pipeline run automatically dumps a JSON file to `logs/` at the repo root. 
 ```
 
 This provides full traceability of every run — the exact config used and every intermediate value produced by the operators. The `logs/` directory is git-ignored.
+
+---
+
+## Docker
+
+The project ships with a `Dockerfile` and `docker-compose.yml`. The image is built on `ghcr.io/astral-sh/uv:python3.14-bookworm-slim` (bundles uv + Python 3.14); no separate Python install is needed.
+
+### Services
+
+| Service | Description | Port |
+|---|---|---|
+| `ui` | Streamlit web UI | 8501 |
+| `cli` | Interactive terminal REPL (requires `stdin_open + tty`) | — |
+| `postgres` | PostgreSQL 17 (for adapter development and testing) | 5432 |
+
+### Volumes
+
+- `./logs:/app/logs` — session logs written by the pipeline persist on the host
+- `./data:/app/data` — database file is bind-mounted, so you can swap the DB without rebuilding the image
+- `postgres_data` (named) — PostgreSQL data persists across container restarts
+
+### Secrets
+
+Secrets (`OPENAI_API_KEY`, etc.) are passed at runtime via `env_file: .env`. They are never baked into the image. Copy `.env.example` → `.env` and fill in your key before running.
+
+### Quick reference
+
+```bash
+docker compose build          # build the image
+docker compose up ui          # web UI → http://localhost:8501
+docker compose run --rm cli   # interactive CLI
+docker compose up postgres -d # PostgreSQL only (background)
+```
 
 ---
 

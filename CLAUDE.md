@@ -29,6 +29,27 @@ uv run python src/vortosql/pipeline/nl2sql_pipeline.py
 
 Tests cover the DB adapters (`tests/core/database/`). Pre-commit hooks run ruff + black automatically.
 
+## Docker
+
+```bash
+# Build image
+docker compose build
+
+# Run web UI  →  http://localhost:8501
+docker compose up ui
+
+# Run interactive CLI
+docker compose run --rm cli
+
+# Start PostgreSQL only (for adapter dev/tests)
+docker compose up postgres -d
+
+# Run all services
+docker compose up
+```
+
+Secrets (`OPENAI_API_KEY`, etc.) are read from `.env` at runtime — they are never baked into the image. Copy `.env.example` → `.env` and fill in your key before running.
+
 ## Architecture
 
 This is a **modular NL2SQL pipeline** that translates natural language questions into SQL, optionally enforces an intent gate and a schema allowlist, executes SQL, and returns a natural language answer.

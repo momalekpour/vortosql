@@ -1,0 +1,32 @@
+services:
+  ui:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+
+  cli:
+    build: .
+    stdin_open: true
+    tty: true
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
+    command: ["uv", "run", "python", "-m", "vortosql.cli"]
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: vortosql
+      POSTGRES_USER: vortosql
+      POSTGRES_PASSWORD: vortosql
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

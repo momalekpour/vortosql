@@ -17,6 +17,8 @@ uv run pre-commit install
 
 ## Run
 
+### Local
+
 ```bash
 # Copy the example env file and set your OPENAI_API_KEY
 cp .env.example .env
@@ -26,6 +28,21 @@ bash scripts/run_ui.sh
 
 # CLI REPL
 bash scripts/run_cli.sh
+```
+
+### Docker
+
+```bash
+cp .env.example .env   # fill in OPENAI_API_KEY
+
+# Web UI → http://localhost:8501
+docker compose up ui
+
+# Interactive CLI
+docker compose run --rm cli
+
+# PostgreSQL only (for development/testing)
+docker compose up postgres -d
 ```
 
 ## Architecture
