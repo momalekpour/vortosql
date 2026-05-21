@@ -1,12 +1,26 @@
 import enum
 import time
-from typing import Dict, List, Union
-
-from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, pipeline
 
 from vortosql.core.logger import Logger
 
 logger = Logger(__name__)
+
+
+def _require_transformers():
+    try:
+        from transformers import (
+            AutoModel,
+            AutoModelForCausalLM,
+            AutoTokenizer,
+            pipeline,
+        )
+    except ImportError as e:
+        raise ImportError(
+            "The HuggingFace provider requires the 'huggingface' extra. "
+            "Install it with: pip install 'vortosql[huggingface]' "
+            "(or: uv sync --extra huggingface)."
+        ) from e
+    return AutoModel, AutoModelForCausalLM, AutoTokenizer, pipeline
 
 
 class HuggingFaceModel(enum.Enum):
@@ -28,13 +42,14 @@ class HuggingFaceModel(enum.Enum):
 
 class HuggingFaceChatCompletion:
     def __init__(self, model_name: HuggingFaceModel):
+        _, AutoModelForCausalLM, AutoTokenizer, _ = _require_transformers()
         self.model_name = model_name.value
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
 
     def get_chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         max_length: int = 100,
         temperature: float = 1.0,
         top_p: float = 0.9,
@@ -79,6 +94,7 @@ class HuggingFaceChatCompletion:
 
 class HuggingFaceEmbeddings:
     def __init__(self, model_name: HuggingFaceModel):
+        AutoModel, _, AutoTokenizer, pipeline = _require_transformers()
         self.model_name = model_name.value
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModel.from_pretrained(self.model_name)
@@ -86,7 +102,7 @@ class HuggingFaceEmbeddings:
             "feature-extraction", model=self.model, tokenizer=self.tokenizer
         )
 
-    def get_embedding(self, input_data: Union[str, List[str]]):
+    def get_embedding(self, input_data: str | list[str]):
         try:
             if isinstance(input_data, str):
                 input_data = [input_data]

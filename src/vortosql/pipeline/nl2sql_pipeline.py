@@ -4,8 +4,6 @@ import time
 from datetime import datetime
 from typing import Any
 
-import yaml
-
 from vortosql.core.logger import Logger
 from vortosql.pipeline.answer_generator import AnswerGenerator
 from vortosql.pipeline.config import NL2SQLPipelineConfig
@@ -69,7 +67,8 @@ class NL2SQLPipeline:
         context["pipeline_latency"] = end_time - start_time
         context["timestamp"] = timestamp
 
-        self._dump_session_log(context)
+        if os.environ.get("VORTOSQL_DUMP_SESSION_LOGS"):
+            self._dump_session_log(context)
 
         return context
 
@@ -84,20 +83,3 @@ class NL2SQLPipeline:
         }
         with open(filepath, "w") as f:
             json.dump(payload, f, indent=2, default=str)
-
-
-if __name__ == "__main__":
-    # ad-hoc testing
-    with open("config.yaml") as f:
-        config = yaml.safe_load(f)
-
-    pipeline = NL2SQLPipeline(config=config["nl2sql_pipeline"])
-
-    result = pipeline.execute(
-        user_question="What is the name of the employee with the highest salary?",
-    )
-
-    print(f"Generated SQL : {result.get('sql_generator_sql_query')}")
-    print(f"Executed SQL  : {result.get('sql_executor_sql_query')}")
-    print(f"Rows          : {result.get('sql_executor_rows')}")
-    print(f"Latency       : {result['pipeline_latency']:.2f}s")

@@ -12,9 +12,10 @@ from vortosql.pipeline.sql_generator import SQLGenerationPromptTemplate
 
 class IntentGuardrailConfig(BaseModel):
     scope: str | None = None
+    fail_closed: bool = False
     chat_completion_model_provider: ModelProvider
     chat_completion_model_name: OllamaModel | OpenAIModel
-    temperature: confloat(ge=0, le=2)
+    temperature: confloat(ge=0, le=2) = 0
 
 
 class SchemaLinkerConfig(BaseModel):
@@ -36,7 +37,7 @@ class SchemaLinkerConfig(BaseModel):
 
 class ExampleSelectorConfig(BaseModel):
     technique: ExampleSelectionTechnique
-    number_of_examples: int
+    number_of_examples: int = 3
     embedding_model_provider: ModelProvider | None = None
     embedding_model_name: OllamaModel | OpenAIModel | None = None
     random_seed: int | None = None
@@ -53,21 +54,23 @@ class ExampleSelectorConfig(BaseModel):
 
 
 class SQLGeneratorConfig(BaseModel):
-    prompt_template: SQLGenerationPromptTemplate
+    prompt_template: SQLGenerationPromptTemplate = SQLGenerationPromptTemplate.ZERO_SHOT
     chat_completion_model_provider: ModelProvider
     chat_completion_model_name: OllamaModel | OpenAIModel
-    temperature: confloat(ge=0, le=2)
-    random_seed: int | None
+    temperature: confloat(ge=0, le=2) = 0
+    random_seed: int | None = None
 
 
 class SQLCorrectorConfig(BaseModel):
-    prompt_template: SQLCorrectionPromptTemplate
-    max_correction_attempts: int
+    prompt_template: SQLCorrectionPromptTemplate = (
+        SQLCorrectionPromptTemplate.SYNTAX_CORRECTION
+    )
+    max_correction_attempts: int = 0
     dbms: DBMS
     chat_completion_model_provider: ModelProvider
     chat_completion_model_name: OllamaModel | OpenAIModel
-    temperature: confloat(ge=0, le=2)
-    random_seed: int | None
+    temperature: confloat(ge=0, le=2) = 0
+    random_seed: int | None = None
 
 
 class SQLExecutorConfig(BaseModel):
@@ -77,7 +80,7 @@ class SQLExecutorConfig(BaseModel):
 class AnswerGeneratorConfig(BaseModel):
     chat_completion_model_provider: ModelProvider
     chat_completion_model_name: OllamaModel | OpenAIModel
-    temperature: confloat(ge=0, le=2)
+    temperature: confloat(ge=0, le=2) = 0
 
 
 class NL2SQLPipelineConfig(BaseModel):

@@ -65,6 +65,10 @@ def main() -> None:
         row_count = result.get("sql_executor_row_count", 0)
         latency = result.get("pipeline_latency", 0)
 
+        answer_error = result.get("answer_generator_error")
+        if answer_error:
+            print(f"\n  ! Answer generation failed: {answer_error}")
+
         answer = result.get("answer_generator_answer")
         if answer:
             print(f"\n  {answer}")

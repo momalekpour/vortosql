@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Any
 
 from vortosql.core.logger import Logger
@@ -14,7 +15,7 @@ class IntentGuardrail(Operator):
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self._prompt_renderer = PromptRenderer(
-            templates_dir_path="src/vortosql/pipeline/intent_guardrail/prompt_templates"
+            templates_dir_path=str(Path(__file__).parent / "prompt_templates")
         )
         self._llm = ModelManager.create_model(
             model_provider=self.config["chat_completion_model_provider"],
@@ -31,6 +32,7 @@ class IntentGuardrail(Operator):
             return
 
         user_question = context.get("user_question", "")
+        guardrail_failed = False
         try:
             prompt = self._prompt_renderer.render(
                 "intent_check",
@@ -50,17 +52,27 @@ class IntentGuardrail(Operator):
             is_in_scope: bool = bool(data.get("is_in_scope", True))
             reason: str = data.get("reason", "")
         except Exception as e:
-            # Fail open: if classification fails, let the pipeline continue
+            guardrail_failed = True
+            fail_closed = bool(self.config.get("fail_closed", False))
             logger.log(
                 "warning",
                 "INTENT_GUARDRAIL_FAILED",
-                {"error": str(e), "question": user_question},
+                {
+                    "error": str(e),
+                    "question": user_question,
+                    "fail_closed": fail_closed,
+                },
             )
-            is_in_scope = True
-            reason = ""
+            if fail_closed:
+                is_in_scope = False
+                reason = f"Intent classification failed: {e}"
+            else:
+                is_in_scope = True
+                reason = ""
 
         context["intent_guardrail_is_in_scope"] = is_in_scope
         context["intent_guardrail_reason"] = reason
+        context["intent_guardrail_failed"] = guardrail_failed
 
         if not is_in_scope:
             message = (

@@ -1,4 +1,5 @@
 import enum
+from pathlib import Path
 from typing import Any
 
 from vortosql.core.logger import Logger
@@ -19,7 +20,7 @@ class SQLGenerator(Operator):
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.prompt_renderer = PromptRenderer(
-            templates_dir_path="src/vortosql/pipeline/sql_generator/prompt_templates"
+            templates_dir_path=str(Path(__file__).parent / "prompt_templates")
         )
         self.llm = ModelManager.create_model(
             model_provider=self.config["chat_completion_model_provider"],

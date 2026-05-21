@@ -40,3 +40,4 @@ class SQLExecutor(Operator):
             context["sql_executor_rows"] = []
             context["sql_executor_row_count"] = 0
             context["sql_executor_error"] = str(e)
+            context["pipeline_early_stop"] = f"SQL execution failed: {e}"

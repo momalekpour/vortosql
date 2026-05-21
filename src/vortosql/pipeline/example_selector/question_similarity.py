@@ -1,9 +1,8 @@
 import math
 import os
-from typing import Any, List, Tuple, Union
+from typing import Any
 
 import numpy as np
-from datasets import load_dataset
 from numpy import dtype, floating, ndarray
 
 from vortosql.core.logger import Logger
@@ -24,6 +23,14 @@ _examples_cache: list | None = None
 def load_bird_mini_dev_examples() -> list:
     global _examples_cache
     if _examples_cache is None:
+        try:
+            from datasets import load_dataset
+        except ImportError as e:
+            raise ImportError(
+                "Few-shot example selection requires the 'examples' extra. "
+                "Install it with: pip install 'vortosql[examples]' "
+                "(or: uv sync --extra examples)."
+            ) from e
         ds = load_dataset("birdsql/bird_mini_dev", cache_dir=_DATASET_CACHE_DIR)
         _examples_cache = list(ds["mini_dev_sqlite"])
     return _examples_cache  # type: ignore[return-value]
@@ -36,7 +43,7 @@ class QuestionSimilarity:
     def __init__(
         self,
         model_provider: ModelProvider,
-        model_name: Union[OllamaModel, OpenAIModel],
+        model_name: OllamaModel | OpenAIModel,
     ) -> None:
         self.model_provider = model_provider
         self.task_type = ModelType.EMBEDDING
@@ -98,7 +105,7 @@ class QuestionSimilarity:
 
     def select_examples(
         self, k: int, user_question: str
-    ) -> List[Tuple[str, str | None, str]]:
+    ) -> list[tuple[str, str | None, str]]:
         query_embedding, query_norm = self._calculate_query_embedding_and_norm(
             user_question
         )
@@ -116,7 +123,7 @@ class QuestionSimilarity:
         ][:k]
         return selected_examples
 
-    def _calculate_example_embeddings_and_norms(self) -> Tuple[np.ndarray, np.ndarray]:
+    def _calculate_example_embeddings_and_norms(self) -> tuple[np.ndarray, np.ndarray]:
         questions = [example["question"] for example in self.examples_list]
         embedding_model = ModelManager.create_model(
             model_provider=self.model_provider,

@@ -20,14 +20,14 @@ uv run ruff check src/
 # Format
 uv run black src/
 
-# Run tests (DB adapter unit tests; 31 tests)
+# Run tests (DB adapters + pipeline operators with mocked LLMs)
 uv run pytest tests/
 
-# Ad-hoc pipeline test (hardcoded query in __main__ block)
-uv run python src/vortosql/pipeline/nl2sql_pipeline.py
+# Ad-hoc full-pipeline smoke (calls real LLM; requires OPENAI_API_KEY)
+uv run python scripts/smoke_pipeline.py
 ```
 
-Tests cover the DB adapters (`tests/core/database/`). Pre-commit hooks run ruff + black automatically.
+Tests live in `tests/`: DB adapter unit tests in `tests/core/database/` and pipeline operator tests with mocked LLMs in `tests/pipeline/`. Pre-commit hooks run ruff + black automatically.
 
 ## Docker
 

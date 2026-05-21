@@ -4,10 +4,11 @@ import os
 from collections import defaultdict
 from copy import copy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from vortosql.core.database.database_handler import DBMS, DatabaseHandler
-from vortosql.core.logger import logger
+from vortosql.core.logger import Logger
 from vortosql.core.model_manager import OpenAIModel
 from vortosql.core.model_manager.model_manager import (
     ModelManager,
@@ -19,7 +20,7 @@ from vortosql.core.model_manager.utils import compose_chat_messages
 from vortosql.core.prompt_renderer import PromptRenderer
 from vortosql.pipeline.operator import Operator
 
-logger = logger.Logger(__name__)
+logger = Logger(__name__)
 
 
 class SchemaLinkingTechnique(enum.Enum):
@@ -64,7 +65,7 @@ class SchemaLinker(Operator):
         self.tables: list[Table] = []
         self.foreign_keys: list[ForeignKey] = []
         self._prompt_renderer = PromptRenderer(
-            templates_dir_path="src/vortosql/pipeline/schema_linker/prompt_templates"
+            templates_dir_path=str(Path(__file__).parent / "prompt_templates")
         )
         self._read_schema()
 
@@ -514,68 +515,3 @@ class SchemaLinker(Operator):
             include_schema_overview=True,
         )
         return schema_description, dict(relevant_columns)
-
-
-if __name__ == "__main__":
-    # ad-hoc testing
-    db_file_path = "data/employees.db"
-    question = "What is the name of the employee with the highest salary?"
-
-    schema_guardrails = {
-        "Employee": ["EmployeeId", "Name", "SalaryAmount", "Role"],
-        "Certification": ["CertificationId"],
-    }
-
-    # Full schema — no LLM
-    print("--------\nFull Schema (unrestricted)")
-    linker = SchemaLinker(
-        config={"db_file_path": db_file_path, "technique": SchemaLinkingTechnique.FULL}
-    )
-    ctx: dict[str, Any] = {}
-    linker.execute(ctx)
-    print(ctx["schema_linker_db_schema"])
-
-    print("--------\nFull Schema (restricted)")
-    linker = SchemaLinker(
-        config={
-            "db_file_path": db_file_path,
-            "technique": SchemaLinkingTechnique.FULL,
-            "schema_guardrails": schema_guardrails,
-        }
-    )
-    ctx = {}
-    linker.execute(ctx)
-    print(ctx["schema_linker_db_schema"])
-    print("Columns by table:", ctx["schema_linker_db_columns"])
-
-    # TCSL — LLM only sees accessible tables/columns
-    print("--------\nTCSL (restricted)")
-    linker = SchemaLinker(
-        config={
-            "db_file_path": db_file_path,
-            "technique": SchemaLinkingTechnique.TCSL,
-            "model_provider": ModelProvider.OPENAI,
-            "model_name": OpenAIModel.GPT_54_MINI,
-            "schema_guardrails": schema_guardrails,
-        }
-    )
-    ctx = {"user_question": question}
-    linker.execute(ctx)
-    print(ctx["schema_linker_db_schema"])
-    print("Columns by table:", ctx["schema_linker_db_columns"])
-
-    # SCSL — LLM evaluates columns only within accessible set
-    print("--------\nSCSL (restricted)")
-    linker = SchemaLinker(
-        config={
-            "db_file_path": db_file_path,
-            "technique": SchemaLinkingTechnique.SCSL,
-            "model_provider": ModelProvider.OPENAI,
-            "model_name": OpenAIModel.GPT_54_MINI,
-            "schema_guardrails": schema_guardrails,
-        }
-    )
-    ctx = {"user_question": question}
-    linker.execute(ctx)
-    print(ctx["schema_linker_db_schema"])
-    print("Columns by table:", ctx["schema_linker_db_columns"])

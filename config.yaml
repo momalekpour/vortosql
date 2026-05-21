@@ -4,6 +4,7 @@ nl2sql_pipeline:
 
   intent_guardrail:
     scope: null                                  # Optional scope description; null = skip intent gate entirely
+    fail_closed: false                           # If true, treat LLM/parse errors as out-of-scope (defaults to fail-open)
     chat_completion_model_provider: openai       # LLM provider: "openai"
     chat_completion_model_name: gpt-5.4          # Model name for the provider above: "gpt-5.4"
     temperature: 0                               # 0 = deterministic; range 0–2

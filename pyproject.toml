@@ -10,10 +10,10 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "anthropic>=0.96.0",
-    "datasets>=4.8.4",
     "duckdb>=1.5.2",
     "jinja2>=3.1.6",
     "loguru>=0.7.3",
+    "numpy>=2.0",
     "ollama>=0.6.1",
     "openai>=2.32.0",
     "pandas>=3.0.2",
@@ -22,10 +22,11 @@ dependencies = [
     "sqlglot>=30.4.3",
     "streamlit>=1.56.0",
     "tiktoken>=0.12.0",
-    "torch>=2.11.0",
-    "torchvision>=0.26.0",
-    "transformers>=5.5.4",
 ]
+
+[project.optional-dependencies]
+huggingface = ["transformers>=5.5.4"]
+examples = ["datasets>=4.8.4"]
 
 [dependency-groups]
 dev = [
@@ -75,7 +76,7 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--import-mode=importlib",
-    "--cov=vortosql.core.database",
+    "--cov=vortosql",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
@@ -87,8 +88,12 @@ filterwarnings = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/vortosql/core/database"]
-omit = ["*/__init__.py"]
+source = ["src/vortosql"]
+omit = [
+    "*/__init__.py",
+    "src/vortosql/core/model_manager/huggingface_model.py",
+    "src/vortosql/pipeline/example_selector/question_similarity.py",
+]
 
 [tool.coverage.report]
 show_missing = true
@@ -100,4 +105,4 @@ exclude_also = [
     "if __name__ == .__main__.:",
     "\\.\\.\\.",
 ]
-fail_under = 85
+fail_under = 40

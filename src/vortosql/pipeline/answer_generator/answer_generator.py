@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 from vortosql.core.logger import Logger
@@ -13,7 +14,7 @@ class AnswerGenerator(Operator):
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self._prompt_renderer = PromptRenderer(
-            templates_dir_path="src/vortosql/pipeline/answer_generator/prompt_templates"
+            templates_dir_path=str(Path(__file__).parent / "prompt_templates")
         )
         self._llm = ModelManager.create_model(
             model_provider=self.config["chat_completion_model_provider"],
@@ -65,3 +66,4 @@ class AnswerGenerator(Operator):
                 {"error": str(e)},
             )
             context["answer_generator_answer"] = None
+            context["answer_generator_error"] = str(e)

@@ -69,7 +69,9 @@ docker-compose.yml                  # Services: ui (8501), cli (interactive), po
 scripts/
 ├── run_ui.sh                       # Sources .env, then launches Streamlit
 ├── run_cli.sh                      # Sources .env, then launches the CLI
-└── load_dotenv.sh                  # Exports all vars from .env into the shell
+├── load_dotenv.sh                  # Exports all vars from .env into the shell
+├── smoke_pipeline.py               # Ad-hoc full-pipeline smoke test (calls real LLM)
+└── smoke_schema_linker.py          # Ad-hoc SchemaLinker techniques (full / TCSL / SCSL)
 
 data/
 └── employees.db                    # SQLite database (demo data)
@@ -143,13 +145,15 @@ The first operator in the pipeline. Uses an LLM to determine whether the user's 
 
 **Config (`IntentGuardrailConfig`):**
 
-| Key | Type | Required |
-|---|---|---|
-| `chat_completion_model_provider` | `ModelProvider` | yes |
-| `chat_completion_model_name` | model enum | yes |
-| `temperature` | `float [0, 2]` | yes |
+| Key | Type | Required | Default |
+|---|---|---|---|
+| `scope` | `str \| None` | no | `null` (operator becomes a no-op) |
+| `fail_closed` | `bool` | no | `false` (LLM/parse errors → fail open) |
+| `chat_completion_model_provider` | `ModelProvider` | yes | — |
+| `chat_completion_model_name` | model enum | yes | — |
+| `temperature` | `float [0, 2]` | no | `0` |
 
-The scope description is an operator-level config key (`nl2sql_pipeline.intent_guardrail.scope` in `config.yaml`), overridable at construction time via `NL2SQLApp(scope=...)`. When `scope` is empty/null, IntentGuardrail short-circuits: it writes `intent_guardrail_is_in_scope=True` with reason `"no scope configured"` and returns without calling the LLM.
+The scope description is overridable at construction time via `NL2SQLApp(scope=...)`. When `scope` is empty/null, IntentGuardrail short-circuits: it writes `intent_guardrail_is_in_scope=True` with reason `"no scope configured"` and returns without calling the LLM.
 
 **Prompt template (`intent_check.jinja`):**
 
@@ -157,10 +161,13 @@ A generic, scope-parameterised classifier. Receives `scope` and `user_question`,
 
 **Behaviour:**
 - Parses the JSON response; strips markdown fences if present
-- On JSON parse failure: **fails open** (`is_in_scope = True`) — false negatives are preferable to blocking valid questions
+- On LLM / JSON parse failure: behaviour depends on `fail_closed`
+  - `false` (default): **fails open** (`is_in_scope = True`) — false negatives are preferable to blocking valid questions
+  - `true`: **fails closed** (`is_in_scope = False`) — sets `pipeline_early_stop` with the underlying error
+- In either failure mode, `intent_guardrail_failed = True` is written so callers can observe the degraded state
 - When out of scope: sets `context["pipeline_early_stop"]` with a user-facing message, halting the pipeline immediately
 
-**Context writes:** `intent_guardrail_is_in_scope` (bool), `intent_guardrail_reason` (str), `pipeline_early_stop` (str, only when out of scope)
+**Context writes:** `intent_guardrail_is_in_scope` (bool), `intent_guardrail_reason` (str), `intent_guardrail_failed` (bool), `pipeline_early_stop` (str, only when out of scope or fail-closed)
 
 ---
 
@@ -172,8 +179,9 @@ Connects to the SQLite database at startup, reads the full schema (tables, colum
 
 | Key | Type | Required |
 |---|---|---|
-| `db_file_path` | `str` | yes |
+| `db_file_path` | `str` | yes (injected by the pipeline from the top-level `db_file_path`) |
 | `technique` | `SchemaLinkingTechnique` | yes |
+| `schema_guardrails` | `dict[str, list[str]] \| None` | no — when set, restricts which tables/columns are visible |
 | `model_provider` | `ModelProvider` | for TCSL/SCSL only |
 | `model_name` | `OpenAIModel \| OllamaModel` | for TCSL/SCSL only |
 
@@ -269,7 +277,9 @@ Skipped when `max_correction_attempts = 0` (operator not added to operator list)
 | `temperature` | `float [0, 2]` | yes |
 | `random_seed` | `int \| None` | no |
 
-**Context writes:** `sql_query` (corrected in-place), `sql_corrector_sql_query`, `sql_corrector_is_successful`, `sql_corrector_prompt`, `sql_corrector_num_attempts`, `sql_corrector_latency`, `sql_corrector_num_input_tokens`, `sql_corrector_num_output_tokens`
+If correction is exhausted without producing a parsable query, the operator also sets `context["pipeline_early_stop"]` so the pipeline halts before SQLExecutor runs the broken query.
+
+**Context writes:** `sql_query` (corrected in-place), `sql_corrector_sql_query`, `sql_corrector_is_successful`, `sql_corrector_prompt`, `sql_corrector_num_attempts`, `sql_corrector_latency`, `sql_corrector_num_input_tokens`, `sql_corrector_num_output_tokens`, `pipeline_early_stop` (only when retries are exhausted)
 
 ---
 
@@ -284,9 +294,9 @@ Executes the generated SQL against the configured database and writes the result
 | `db_file_path` | `str` | yes |
 | `dbms` | `DBMS` | yes |
 
-On execution error: writes the error string to `sql_executor_error` and zero-fills the result fields; does not raise — callers handle gracefully.
+On execution error: writes the error string to `sql_executor_error`, zero-fills the result fields, and sets `pipeline_early_stop`. The operator does not re-raise — downstream operators short-circuit on `pipeline_early_stop` and callers can read `sql_executor_error` for the user-facing message.
 
-**Context writes:** `sql_executor_sql_query`, `sql_executor_columns`, `sql_executor_rows`, `sql_executor_row_count`, `sql_executor_error`
+**Context writes:** `sql_executor_sql_query`, `sql_executor_columns`, `sql_executor_rows`, `sql_executor_row_count`, `sql_executor_error`, `pipeline_early_stop` (on failure)
 
 ---
 
@@ -308,7 +318,9 @@ Skipped when the pipeline was early-stopped (out-of-scope question), when SQL ex
 
 Receives `user_question`, `sql_executor_sql_query`, `sql_executor_columns`, and `sql_executor_rows`. Formats the results as a readable list and asks the LLM to answer the question based on the data. Instructs the LLM to keep the answer brief and avoid SQL or technical details.
 
-**Context writes:** `answer_generator_answer` (str), `answer_generator_prompt` (str), plus prefixed LLM metadata keys
+If the LLM call itself fails, `answer_generator_answer` is set to `None` and `answer_generator_error` carries the error string. The pipeline does not stop (this is the last operator), but the CLI / UI surfaces the failure to the user.
+
+**Context writes:** `answer_generator_answer` (str | None), `answer_generator_prompt` (str), `answer_generator_error` (str, only on failure), plus prefixed LLM metadata keys
 
 ---
 
@@ -419,7 +431,7 @@ logger.log("info", "EVENT_NAME", {"key": "value"})
 
 ## Session Logs
 
-Every pipeline run automatically dumps a JSON file to `logs/` at the repo root. Each file is named by timestamp (`YYYY-MM-DD_HH-MM-SS.json`) and contains:
+Opt-in via the `VORTOSQL_DUMP_SESSION_LOGS` env var (any truthy value enables it). When enabled, every pipeline run writes a JSON file to `logs/` at the repo root. Each file is named by timestamp (`YYYY-MM-DD_HH-MM-SS.json`) and contains:
 
 ```json
 {
@@ -428,13 +440,13 @@ Every pipeline run automatically dumps a JSON file to `logs/` at the repo root. 
 }
 ```
 
-This provides full traceability of every run — the exact config used and every intermediate value produced by the operators. The `logs/` directory is git-ignored.
+This provides full traceability of every run — the exact config used and every intermediate value produced by the operators. The `logs/` directory is git-ignored. Disabled by default because the dump may include rendered LLM prompts containing the user's question.
 
 ---
 
 ## Docker
 
-The project ships with a `Dockerfile` and `docker-compose.yml`. The image is built on `ghcr.io/astral-sh/uv:python3.14-bookworm-slim` (bundles uv + Python 3.14); no separate Python install is needed.
+The project ships with a `Dockerfile` and `docker-compose.yml`. The image is built on `ghcr.io/astral-sh/uv:python3.14-bookworm-slim` (bundles uv + Python 3.14); no separate Python install is needed. The container runs as a non-root `appuser` (uid 1000) and the UI service publishes a `HEALTHCHECK` against Streamlit's `/_stcore/health` endpoint.
 
 ### Services
 

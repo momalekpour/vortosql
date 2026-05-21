@@ -1,4 +1,5 @@
 import enum
+from pathlib import Path
 from typing import Any
 
 import sqlglot
@@ -22,7 +23,7 @@ class SQLCorrector(Operator):
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.prompt_renderer = PromptRenderer(
-            templates_dir_path="src/vortosql/pipeline/sql_corrector/prompt_templates"
+            templates_dir_path=str(Path(__file__).parent / "prompt_templates")
         )
         self.llm = ModelManager.create_model(
             model_provider=self.config["chat_completion_model_provider"],
@@ -108,7 +109,7 @@ class SQLCorrector(Operator):
                 },
             )
 
-        return {
+        result: dict[str, Any] = {
             "sql_query": sql_query,
             "sql_corrector_sql_query": sql_query,
             "sql_corrector_prompt": prompt,
@@ -118,6 +119,11 @@ class SQLCorrector(Operator):
             "sql_corrector_num_input_tokens": total_input_tokens,
             "sql_corrector_num_output_tokens": total_output_tokens,
         }
+        if not is_parsable and max_correction_attempts > 0:
+            result["pipeline_early_stop"] = (
+                f"SQL correction failed after {max_correction_attempts} attempts."
+            )
+        return result
 
     @staticmethod
     def _flatten_sql_query(sql_query: str) -> str:

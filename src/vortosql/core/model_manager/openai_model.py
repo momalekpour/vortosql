@@ -1,6 +1,5 @@
 import enum
 import time
-from typing import Dict, List, Union
 
 import tiktoken
 from openai import OpenAI
@@ -42,7 +41,7 @@ class OpenAIChatCompletion:
 
     def get_chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         frequency_penalty=None,
         logit_bias=None,
         logprobs=None,
@@ -114,7 +113,7 @@ class OpenAIEmbeddings:
 
     def get_embedding(
         self,
-        input_data: Union[str, List],
+        input_data: str | list,
         encoding_format=None,
         dimensions=None,
         user=None,
@@ -161,13 +160,8 @@ class OpenAIUtils:
                 {"model": model, "message": "Using cl100k_base encoding."},
             )
             encoding = tiktoken.get_encoding("cl100k_base")
-        # gpt-3.5-turbo-0301 had a different overhead; all modern models use 3/1
-        if model == "gpt-3.5-turbo-0301":
-            tokens_per_message = 4
-            tokens_per_name = -1
-        else:
-            tokens_per_message = 3
-            tokens_per_name = 1
+        tokens_per_message = 3
+        tokens_per_name = 1
         num_tokens = 0
         for message in messages:
             num_tokens += tokens_per_message

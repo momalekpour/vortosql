@@ -9,7 +9,11 @@ cd vortosql
 
 # Install dependencies (uv manages the virtualenv and Python version automatically)
 # Install uv first if needed: https://docs.astral.sh/uv/getting-started/installation/
-uv sync --all-extras
+uv sync
+
+# Optional extras — only needed if you use the HuggingFace provider or few-shot examples:
+#   uv sync --extra huggingface   # transformers (~1 GB with torch)
+#   uv sync --extra examples      # datasets (BIRD few-shot loader)
 
 # (Optional) Install pre-commit hooks for auto linting (ruff) and formatting (black) for development
 uv run pre-commit install
@@ -68,4 +72,4 @@ Two opt-in defences, both controlled by `config.yaml` (or by overrides passed to
 
 ### Session Logs
 
-Each pipeline run dumps its full config and context to `logs/<timestamp>.json` for traceability.
+Opt-in: set `VORTOSQL_DUMP_SESSION_LOGS=1` and every pipeline run will write its full config and context to `logs/<timestamp>.json` for traceability.
